@@ -1,19 +1,15 @@
 import sqlite3
 
-conn = sqlite3.connect('database.db')
-cursor = conn.cursor()
+def get_questions(category):
+    # Connect to the database
+    conn = sqlite3.connect('database.sql.db')
+    c = conn.cursor()
 
-# Get all table names
-cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-tables = cursor.fetchall()
-table_names = [table[0] for table in tables]
+    # Retrieve questions for the specified category
+    c.execute(f"SELECT * FROM {category}")
+    questions = c.fetchall()
 
-# Get all data from each table
-for table_name in table_names:
-    cursor.execute(f"SELECT * FROM {table_name};")
-    data = cursor.fetchall()
-    print(f"Table: {table_name}")
-    for row in data:
-        print(row)
+    # Close the connection
+    conn.close()
 
-conn.close()
+    return questions

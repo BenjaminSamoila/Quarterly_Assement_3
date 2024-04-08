@@ -1,53 +1,65 @@
-import sqlite3
+import tkinter as tk
+from tkinter import ttk, messagebox
+from read import get_questions
 
-def display_feedback(is_correct):
-    if is_correct:
-        print("\033[92mCorrect!\033[0m\n")
-    else:
-        print("\033[91mWrong! Try again.\033[0m\n")
+class QuizApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Quiz App")
+        self.root.geometry("400x200")
 
-def play_quiz(category):
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
+        self.category_label = tk.Label(root, text="Select a category:")
+        self.category_label.pack()
 
-    cursor.execute(f"SELECT question, answer FROM {category};")
-    questions = cursor.fetchall()
+        self.category_var = tk.StringVar()
+        self.category_combobox = ttk.Combobox(root, textvariable=self.category_var, values=["geography", "history", "accounting", "math", "programming"])
+        self.category_combobox.pack()
 
-    for question, answer in questions:
-        print(question)
-        user_answer = input("Your answer: ")
+        self.start_button = tk.Button(root, text="Start Quiz", command=self.start_quiz)
+        self.start_button.pack()
 
-        if user_answer.lower() == answer.lower():
-            display_feedback(True)
+    def start_quiz(self):
+        category = self.category_var.get()
+        if not category:
+            messagebox.showerror("Error", "Please select a category.")
+            return
+
+        self.root.destroy()
+
+        quiz_window = tk.Tk()
+        quiz_window.title("Quiz")
+        quiz_window.geometry("600x400")
+
+        questions = get_questions(category)
+        self.create_question_widgets(quiz_window, questions)
+
+    def create_question_widgets(self, window, questions):
+        feedback_labels = []
+        for i, question_data in enumerate(questions):
+            question_label = tk.Label(window, text=f"Question {i+1}: {question_data[1]}")
+            question_label.pack()
+
+            choices = [question_data[2], question_data[3], question_data[4], question_data[5]]
+            answer = question_data[6]
+
+            choice_var = tk.StringVar()
+            choice_combobox = ttk.Combobox(window, textvariable=choice_var, values=choices)
+            choice_combobox.pack()
+
+            feedback_label = tk.Label(window, text="")
+            feedback_label.pack()
+            feedback_labels.append(feedback_label)
+
+            submit_button = tk.Button(window, text="Submit", command=lambda ans=answer, choice=choice_var, fb=feedback_label: self.check_answer(ans, choice, fb))
+            submit_button.pack()
+
+    def check_answer(self, answer, choice, feedback_label):
+        if choice.get() == answer:
+            feedback_label.config(text="Correct!", fg="green")
         else:
-            display_feedback(False)
-
-    conn.close()
-
-def main():
-    print("Categories:")
-    print("1. General Geography")
-    print("2. General History")
-    print("3. Accounting")
-    print("4. Math")
-    print("5. Programming")
-
-    category_map = {
-        '1': 'GeneralGeography',
-        '2': 'GeneralHistory',
-        '3': 'Accounting',
-        '4': 'Math',
-        '5': 'Programming'
-    }
-
-    while True:
-        choice = input("Select a category (1-5): ")
-        if choice in category_map:
-            category = category_map[choice]
-            play_quiz(category)
-            break
-        else:
-            print("Invalid choice. Please select a valid category.")
+            feedback_label.config(text="Incorrect!", fg="red")
 
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    app = QuizApp(root)
+    root.mainloop()
